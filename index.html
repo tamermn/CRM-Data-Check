@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prospect × CRM Correlation Report</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --surface2: #EFEFEB;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+    --text: #1A1A18;
+    --text-secondary: #6B6B66;
+    --text-tertiary: #9E9E98;
+    --green: #0F6E56;
+    --green-bg: #E1F5EE;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --red: #A32D2D;
+    --red-bg: #FCEBEB;
+    --blue: #185FA5;
+    --blue-bg: #E6F1FB;
+    --accent: #1A1A18;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: var(--text);
+    color: #fff;
+    padding: 3rem 0 2.5rem;
+  }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 2rem; }
+  .header-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 0.75rem;
+    font-family: var(--mono);
+  }
+  .header-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    color: #fff;
+  }
+  .header-title strong { font-weight: 600; }
+  .header-meta {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    font-family: var(--mono);
+  }
+  .header-meta span { margin-right: 2rem; }
+
+  /* Nav pills */
+  .nav-strip {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-inner {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-inner::-webkit-scrollbar { display: none; }
+  .nav-item {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .nav-item:hover { color: var(--text); }
+  .nav-item.active { color: var(--text); border-bottom-color: var(--text); }
+
+  /* Main content */
+  .main { padding: 3rem 0 4rem; }
+  .section { margin-bottom: 3.5rem; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .section-count {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text-tertiary);
+  }
+
+  /* Metric cards */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent-color, var(--text));
+    opacity: 0.15;
+  }
+  .metric-card.green::before { background: var(--green); opacity: 1; }
+  .metric-card.amber::before { background: var(--amber); opacity: 1; }
+  .metric-card.red::before { background: var(--red); opacity: 1; }
+  .metric-card.blue::before { background: var(--blue); opacity: 1; }
+  .metric-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 0.5rem; font-weight: 500; letter-spacing: 0.02em; }
+  .metric-value { font-size: 2.2rem; font-weight: 300; letter-spacing: -0.03em; line-height: 1; margin-bottom: 0.25rem; }
+  .metric-value.green { color: var(--green); }
+  .metric-value.amber { color: var(--amber); }
+  .metric-value.red { color: var(--red); }
+  .metric-value.blue { color: var(--blue); }
+  .metric-sub { font-size: 11px; color: var(--text-tertiary); font-family: var(--mono); }
+
+  /* Bar chart rows */
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 130px 1fr 70px; align-items: center; gap: 12px; }
+  .bar-label { font-size: 12px; color: var(--text-secondary); text-align: right; font-family: var(--mono); }
+  .bar-track {
+    height: 24px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.9);
+    font-family: var(--mono);
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    min-width: 40px;
+  }
+  .bar-count { font-size: 13px; font-weight: 500; font-family: var(--mono); }
+
+  /* Two-column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+  }
+
+  /* Donut chart */
+  .donut-wrap { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { color: var(--text-secondary); }
+  .legend-val { font-weight: 500; font-family: var(--mono); margin-left: auto; padding-left: 1rem; }
+
+  /* Priority funnel */
+  .funnel { display: flex; flex-direction: column; gap: 8px; }
+  .funnel-step {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    gap: 12px;
+    font-size: 13px;
+    transition: background 0.15s;
+  }
+  .funnel-step:hover { background: #e8e8e4; }
+  .funnel-num { font-size: 20px; font-weight: 300; font-family: var(--mono); min-width: 60px; }
+  .funnel-label { color: var(--text-secondary); flex: 1; }
+  .funnel-tag {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Table */
+  .table-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .search-wrap { flex: 1; min-width: 200px; position: relative; }
+  .search-wrap::before {
+    content: '⌕';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-size: 16px;
+  }
+  .search-input {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    font-size: 13px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--text); }
+
+  .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-tab {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .filter-tab:hover { background: var(--surface2); }
+  .filter-tab.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: var(--surface2); }
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  th.right { text-align: right; }
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF8; }
+  .td-name { font-weight: 500; color: var(--text); line-height: 1.3; }
+  .td-domain { font-size: 11px; color: var(--text-tertiary); font-family: var(--mono); margin-top: 2px; }
+  .td-cat { color: var(--text-secondary); font-size: 12px; }
+  .td-num { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--text-secondary); }
+  .td-sales { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--green); font-weight: 500; }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .badge-icp { background: var(--green-bg); color: var(--green); }
+  .badge-nodeal { background: var(--amber-bg); color: var(--amber); }
+  .region-pill {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-secondary);
+    font-family: var(--mono);
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: var(--mono);
+  }
+  .page-btns { display: flex; gap: 6px; }
+  .page-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--mono);
+    transition: all 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { background: var(--text); color: #fff; border-color: var(--text); }
+  .page-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* Insight boxes */
+  .insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 2rem; }
+  .insight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    border-left: 3px solid;
+  }
+  .insight.green { border-left-color: var(--green); }
+  .insight.amber { border-left-color: var(--amber); }
+  .insight.blue { border-left-color: var(--blue); }
+  .insight-head { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .insight.green .insight-head { color: var(--green); }
+  .insight.amber .insight-head { color: var(--amber); }
+  .insight.blue .insight-head { color: var(--blue); }
+  .insight-body { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+
+  /* Footer */
+  .footer {
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    padding: 2rem 0;
+    text-align: center;
+  }
+  .footer-text { font-size: 12px; color: var(--text-tertiary); font-family: var(--mono); }
+
+  @media (max-width: 600px) {
+    .bar-row { grid-template-columns: 80px 1fr 50px; }
+    .metric-value { font-size: 1.7rem; }
+    .header-title { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <div class="header-eyebrow">Prospect Intelligence Report</div>
+    <h1 class="header-title">CRM × Prospect<br><strong>Correlation Analysis</strong></h1>
+    <div class="header-meta">
+      <span>91,238 prospects analyzed</span>
+      <span>5 source files</span>
+      <span id="report-date"></span>
+    </div>
+  </div>
+</div>
+
+<nav class="nav-strip">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#coverage" class="nav-item active">Coverage</a>
+      <a href="#icp" class="nav-item">ICP Breakdown</a>
+      <a href="#deals" class="nav-item">Deal Gaps</a>
+      <a href="#opportunities" class="nav-item">Opportunities</a>
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="container">
+
+    <!-- SECTION 1: COVERAGE -->
+    <section class="section" id="coverage">
+      <div class="section-header">
+        <h2 class="section-title">Prospect Coverage</h2>
+        <span class="section-count">91,238 unique domains</span>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Total unique prospects</div>
+          <div class="metric-value">91,238</div>
+          <div class="metric-sub">deduplicated across 5 files</div>
+        </div>
+        <div class="metric-card blue">
+          <div class="metric-label">Found in CRM</div>
+          <div class="metric-value blue">2,970</div>
+          <div class="metric-sub">3.3% match rate</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Not in CRM</div>
+          <div class="metric-value">88,307</div>
+          <div class="metric-sub">96.7% untracked</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Prospect coverage breakdown</div>
+        <div class="bars">
+          <div class="bar-row">
+            <div class="bar-label">Not in CRM</div>
+            <div class="bar-track"><div class="bar-fill" style="width:96.7%; background:#5F5E5A;">96.7%</div></div>
+            <div class="bar-count">88,307</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label">In CRM</div>
+            <div class="bar-track"><div class="bar-fill" style="width:3.3%; background:#185FA5; min-width:48px;">3.3%</div></div>
+            <div class="bar-count">2,970</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insights" style="margin-top:1.5rem;">
+        <div class="insight blue">
+          <div class="insight-head">Coverage gap</div>
+          <div class="insight-body">96.7% of prospects have never entered the CRM. These 88,307 companies represent either a large opportunity or significant noise — worth segmenting by ICP criteria before actioning.</div>
+        </div>
+        <div class="insight amber">
+          <div class="insight-head">Data quality flag</div>
+          <div class="insight-body">Of 2,970 matched companies, 1,345 (45%) have no ICP status assigned — the largest single segment. A status classification sprint would reveal hidden pipeline.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: ICP BREAKDOWN -->
+    <section class="section" id="icp">
+      <div class="section-header">
+        <h2 class="section-title">ICP Breakdown</h2>
+        <span class="section-count">CRM-matched companies only</span>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card green">
+          <div class="metric-label">Within ICP</div>
+          <div class="metric-value green">385</div>
+          <div class="metric-sub">13.0% of CRM matches</div>
+        </div>
+        <div class="metric-card red">
+          <div class="metric-label">Outside ICP</div>
+          <div class="metric-value red">863</div>
+          <div class="metric-sub">29.1% of CRM matches</div>
+        </div>
+        <div class="metric-card amber">
+          <div class="metric-label">Review needed</div>
+          <div class="metric-value amber">377</div>
+          <div class="metric-sub">12.7% of CRM matches</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">No status assigned</div>
+          <div class="metric-value">1,345</div>
+          <div class="metric-sub">45.3% of CRM matches</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Status distribution</div>
+          <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+            <svg viewBox="0 0 120 120" width="120" height="120" style="flex-shrink:0;">
+              <!-- Donut: No status 45.3%, Outside 29.1%, Within 13.0%, Review 12.7% -->
+              <!-- Circumference = 2*pi*46 = 289 -->
+              <circle cx="60" cy="60" r="46" fill="none" stroke="#EFEFEB" stroke-width="18"/>
+              <!-- No status gray: 45.3% = 131 -->
+              <circle cx="60" cy="60" r="46" fill="none" stroke="#888780" stroke-width="18"
+                stroke-dasharray="131 289" stroke-dashoffset="72" transform="rotate(-90 60 60)"/>
+              <!-- Outside ICP red: 29.1% = 84 -->
+              <circle cx="60" cy="60" r="46" fill="none" stroke="#A32D2D" stroke-width="18"
+                stroke-dasharray="84 289" stroke-dashoffset="-59" transform="rotate(-90 60 60)"/>
+              <!-- Within ICP green: 13.0% = 38 -->
+              <circle cx="60" cy="60" r="46" fill="none" stroke="#1D9E75" stroke-width="18"
+                stroke-dasharray="38 289" stroke-dashoffset="-143" transform="rotate(-90 60 60)"/>
+              <!-- Review blue: 12.7% = 37 -->
+              <circle cx="60" cy="60" r="46" fill="none" stroke="#185FA5" stroke-width="18"
+                stroke-dasharray="37 289" stroke-dashoffset="-181" transform="rotate(-90 60 60)"/>
+              <text x="60" y="55" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="16" font-weight="300" fill="#1A1A18">2,970</text>
+              <text x="60" y="70" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#9E9E98">in CRM</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#888780"></div>
+                <span class="legend-label">No status</span>
+                <span class="legend-val">1,345</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#A32D2D"></div>
+                <span class="legend-label">Outside ICP</span>
+                <span class="legend-val">863</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#1D9E75"></div>
+                <span class="legend-label">Within ICP</span>
+                <span class="legend-val">385</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#185FA5"></div>
+                <span class="legend-label">Review needed</span>
+                <span class="legend-val">377</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Priority funnel</div>
+          <div class="funnel">
+            <div class="funnel-step">
+              <div class="funnel-num" style="color:#1A1A18">2,970</div>
+              <div class="funnel-label">Total in CRM</div>
+              <span class="funnel-tag" style="background:#EFEFEB; color:#6B6B66;">Base</span>
+            </div>
+            <div class="funnel-step">
+              <div class="funnel-num" style="color:#1D9E75">385</div>
+              <div class="funnel-label">Within ICP</div>
+              <span class="funnel-tag" style="background:#E1F5EE; color:#0F6E56;">Qualified</span>
+            </div>
+            <div class="funnel-step">
+              <div class="funnel-num" style="color:#854F0B">134</div>
+              <div class="funnel-label">Within ICP, no deal</div>
+              <span class="funnel-tag" style="background:#FAEEDA; color:#854F0B;">Opportunity</span>
+            </div>
+            <div class="funnel-step">
+              <div class="funnel-num" style="color:#185FA5">251</div>
+              <div class="funnel-label">Within ICP, has deal</div>
+              <span class="funnel-tag" style="background:#E6F1FB; color:#185FA5;">Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: DEAL STATUS -->
+    <section class="section" id="deals">
+      <div class="section-header">
+        <h2 class="section-title">Deal Status — Within ICP</h2>
+        <span class="section-count">385 qualified companies</span>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Within ICP total</div>
+          <div class="metric-value">385</div>
+          <div class="metric-sub">fully qualified</div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-label">Has active deal</div>
+          <div class="metric-value green">251</div>
+          <div class="metric-sub">65.2% deal coverage</div>
+        </div>
+        <div class="metric-card amber">
+          <div class="metric-label">No deal — gap</div>
+          <div class="metric-value amber">134</div>
+          <div class="metric-sub">34.8% untouched</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Deal coverage — within ICP</div>
+        <div class="bars">
+          <div class="bar-row">
+            <div class="bar-label">Has deal</div>
+            <div class="bar-track"><div class="bar-fill" style="width:65.2%; background:#1D9E75;">65.2%</div></div>
+            <div class="bar-count">251</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label">No deal</div>
+            <div class="bar-track"><div class="bar-fill" style="width:34.8%; background:#BA7517;">34.8%</div></div>
+            <div class="bar-count">134</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: OPPORTUNITY TABLE -->
+    <section class="section" id="opportunities">
+      <div class="section-header">
+        <h2 class="section-title">Untapped Opportunities</h2>
+        <span class="section-count">134 within ICP — no deal in place</span>
+      </div>
+
+      <div class="table-controls">
+        <div class="search-wrap">
+          <input type="text" class="search-input" id="searchBox" placeholder="Search company or domain…" oninput="filterTable()">
+        </div>
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setRegion('all',this)">All</button>
+          <button class="filter-tab" onclick="setRegion('UAE',this)">UAE</button>
+          <button class="filter-tab" onclick="setRegion('Saudi Arabia',this)">Saudi Arabia</button>
+          <button class="filter-tab" onclick="setRegion('Other',this)">Other</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Category</th>
+              <th>Region</th>
+              <th class="right">Monthly visits</th>
+              <th class="right">Est. monthly sales</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="pagination">
+          <span id="pageInfo" style="color:var(--text-tertiary)"></span>
+          <div class="page-btns">
+            <button class="page-btn" id="prevBtn" onclick="changePage(-1)">← Prev</button>
+            <button class="page-btn" id="nextBtn" onclick="changePage(1)">Next →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="insights">
+        <div class="insight green">
+          <div class="insight-head">Top opportunity</div>
+          <div class="insight-body">noon (Saudi Arabia) leads with 4.17M monthly visits and est. $12.6M monthly sales — already in your ICP but no deal recorded. High-priority outreach candidate.</div>
+        </div>
+        <div class="insight amber">
+          <div class="insight-head">UAE cluster</div>
+          <div class="insight-body">30 UAE companies within ICP have no deals, including notable brands like Lattafa Perfumes (178K visits), Dubai Duty Free, Bateel International, and Casinetto.</div>
+        </div>
+        <div class="insight blue">
+          <div class="insight-head">Saudi Arabia volume</div>
+          <div class="insight-body">104 Saudi companies have no deals despite ICP qualification. Several are high-traffic: Bath & Body Works KSA, GMG/Nike KSA, and Al Haram Plaza all exceed 50K monthly visits.</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p class="footer-text">Prospect × CRM Correlation Report · Confidential · Generated <span id="footer-date"></span></p>
+  </div>
+</footer>
+
+<script>
+const data = [
+  ["EMKE Group","www.luluhypermarket.com","Food & Drink / Mass Merchants","UAE",497463,"$1,805,575"],
+  ["Yas Marina Circuit","www.yasmarinacircuit.com","Sports / Motor Sports","UAE",169043,"$613,555"],
+  ["Bateel International","bateel.com","Food & Drink","UAE",149536,"$542,752"],
+  ["Dubai Duty Free","www.dubaidutyfree.com","Beauty & Fitness","UAE",223408,"$810,878"],
+  ["Bloomingdale's Middle East","bloomingdales.ae","Apparel / Dept Stores","UAE",70984,"$343,522"],
+  ["Mega Store - Abu Dhabi Mall","www.virginmegastore.ae","Retail","UAE",55384,"$268,032"],
+  ["Desert Cart","www.desertcart.ae","Apparel","UAE",26408,"$223,651"],
+  ["The Body Shop UAE","thebodyshop.ae","Beauty & Fitness","UAE",26143,"$221,410"],
+  ["DODUAE.com","doduae.com","Apparel","UAE",6057,"$73,290"],
+  ["Jacky's Retail","www.jackysbrandshop.com","Consumer Electronics","UAE",953,"$17,305"],
+  ["WiWU Middle East","wiwu.ae","Electronics / Hardware","UAE",617,"$14,938"],
+  ["Mamlakat Al Oud","www.mamlakataloud.ae","Perfumes & Fragrances","UAE",10,"$500"],
+  ["Zaira Organic","zairaorganic.com","Skin & Nail Care","UAE",null,"$500"],
+  ["Casinetto","casinetto.com","Food & Drink","UAE",9932,"$545,364"],
+  ["Cosmo Cosmetics UAE","cosmocosmetics.ae","Perfumes & Fragrances","UAE",6856,"$74,663"],
+  ["BY CLOUD FRAGRANCE","www.bycloudfragrance.com","Perfumes & Fragrances","UAE",821,"$15,898"],
+  ["Nysaa Middle East","nysaa.com","Make-Up & Cosmetics","UAE",545,"$13,204"],
+  ["Classy Fashion","www.myjooti.com","Footwear","UAE",639,"$15,471"],
+  ["AL WIFAQ GROUP","alwifaqonline.com","Retail","UAE",418,"$10,136"],
+  ["Beuty Ethic","beautyethic.com","Beauty & Fitness","UAE",10,"$500"],
+  ["Pavanito","pavanito.com","Beauty & Fitness","UAE",5,"$500"],
+  ["Lattafa Perfumes","lattafa.com","Perfumes & Fragrances","UAE",177885,"$645,645"],
+  ["Mai Dubai Water","www.maidubaiwater.com","Food & Drink / Beverages","UAE",13223,"$111,989"],
+  ["La Brioche UAE","www.labriocheuae.com","Baked Goods & Desserts","UAE",12054,"$102,092"],
+  ["Liwa Minor (Coffee Club ME)","thecoffeeclubme.com","Coffee & Tea","UAE",8505,"$92,609"],
+  ["head2toes.ae","head2toes.ae","Make-Up & Cosmetics","UAE",374,"$9,069"],
+  ["Sama Contact Lenses","www.samalenses.com","Vision Care","UAE",88,"$3,414"],
+  ["Nuqi Products","nuqiproducts.com","Vitamins & Supplements","UAE",5,"$500"],
+  ["Al Diwan Kitchen Equipment","www.aldiwankitchen.com","Kitchen & Dining","UAE",null,"$50"],
+  ["Bevarabia","sa.bevarabia.com","Retail","UAE",688,"$16,671"],
+  ["noon","www.noon.com","Apparel / Children's","Saudi Arabia",4177603,"$12,635,741"],
+  ["GMG (Nike KSA)","www.nike.sa","Footwear / Athletic","Saudi Arabia",104745,"$4,202,000,000"],
+  ["Bath & Body Works KSA","www.bathandbodyworks.com.sa","Beauty & Fitness","Saudi Arabia",162710,"$508,666,666"],
+  ["Jeeves KSA","www.jeevesofbelgravia.com","Laundry","Saudi Arabia",18939,"$160,397"],
+  ["Cenomi (Aldo KSA)","aldo.com.sa","Footwear","Saudi Arabia",49079,"$237,515"],
+  ["Home Utensils Trading","homeutensils.com.sa","Home Furnishings","Saudi Arabia",27014,"$228,786"],
+  ["Williams-Sonoma (Pottery Barn)","www.potterybarn.com.sa","Home Decor","Saudi Arabia",30222,"$146,259"],
+  ["Abdul Wahab Mirza Library","mirza.com.sa","Retail","Saudi Arabia",23977,"$203,064"],
+  ["Al Hala Trading (Leem)","www.leem.com","Consumer Electronics","Saudi Arabia",4828,"$58,418"],
+  ["AL Haram Plaza","alharamplaza.com","Apparel","Saudi Arabia",55715,"$269,632"],
+  ["Ounce (أونصة)","ounce.com.sa","Precious Metals","Saudi Arabia",13482,"$114,183"],
+  ["Sindi Thobe","www.sindi.sa","Apparel","Saudi Arabia",7556,"$82,286"],
+  ["FAST FIT EMS","www.fastfit-ems.com","Fitness","Saudi Arabia",11277,"$95,510"],
+  ["Arabian Hunter","arabianhunter.com","Retail","Saudi Arabia",10759,"$117,157"],
+  ["AL Bonian Trading","eleganthome.com.sa","Home Furnishings","Saudi Arabia",7832,"$85,287"],
+  ["Siwar Foods","siwar.com","Food & Drink","Saudi Arabia",2888,"$38,438"],
+  ["Jayla","jayla.sa","Beauty & Fitness","Saudi Arabia",29726,"$143,859"],
+  ["Meats | لحوم","meats.com.sa","Meat & Seafood","Saudi Arabia",4740,"$57,351"],
+  ["Arabian Cloaks","mshalh.com","Apparel","Saudi Arabia",3511,"$46,728"],
+  ["masheedGATE","www.masheedgate.com","Retail","Saudi Arabia",2419,"$35,131"],
+  ["Shab Boutique","shab.sa","Apparel","Saudi Arabia",3863,"$46,748"],
+  ["Auraliving","www.auraliving.com","Home Furnishings","Saudi Arabia",1664,"$26,181"],
+  ["AlSaggafco","alsaggaf.com.sa","Retail","Saudi Arabia",2144,"$31,129"],
+  ["Baselat Trading Co.","baselat.com","Coffee & Tea / Appliances","Saudi Arabia",1146,"$19,419"],
+  ["MODIFY","modify.sa","Auto Parts & Services","Saudi Arabia",8471,"$92,249"],
+  ["Talabiah (طلبية)","talabiah.com.sa","Beauty & Fitness","Saudi Arabia",1466,"$23,060"],
+  ["Moov Store","moovstore.com","GPS & Navigation","Saudi Arabia",1780,"$28,002"],
+  ["Meyar Co","www.meyar.sa","Home Improvement","Saudi Arabia",2287,"$33,210"],
+  ["Dimos Furniture","dimos.com.sa","Home Furnishings","Saudi Arabia",2452,"$35,611"],
+  ["WOSUL | وصـول","wosul.sa","Retail","Saudi Arabia",2215,"$32,170"],
+  ["HalaAljazera","halaljazera.sa","Retail","Saudi Arabia",2331,"$33,850"],
+  ["Saudi International Travel","sitc.sa","Travel","Saudi Arabia",314,"$7,602"],
+  ["EKhalasstore","www.ekhalas.com","Computers","Saudi Arabia",468,"$11,336"],
+  ["Hosinox company","hosinox.sa","Retail","Saudi Arabia",589,"$14,271"],
+  ["AFAMED-SA","www.afamed-sa.com","Retail","Saudi Arabia",501,"$12,137"],
+  ["Namat by Nesma","namat.sa","Retail","Saudi Arabia",148,"$5,761"],
+  ["Eman AlAjlan Fashion","emanalajlan.co","Apparel","Saudi Arabia",270,"$6,535"],
+  ["Ideal Fitness","fitnessway-sa.com","Fitness / Supplements","Saudi Arabia",1410,"$23,900"],
+  ["SIHAMCO","www.sihamco.com","Retail","Saudi Arabia",214,"$5,201"],
+  ["Dr. Wafaa Clinics","drwafaa.com.sa","Health","Saudi Arabia",584,"$14,137"],
+  ["Tahlianano","www.tahlianano.com","Retail","Saudi Arabia",1973,"$28,649"],
+  ["Silk Booth","silkbooth.com","Skin & Nail Care","Saudi Arabia",115,"$4,481"],
+  ["Elryad for Web Design","elryad.com","Web Design & Development","Saudi Arabia",936,"$17,005"],
+  ["MANART ALANDALOS","manaratalandalos.com","Retail","Saudi Arabia",154,"$5,975"],
+  ["MicrotecSaudi","microtec.com.sa","Retail","Saudi Arabia",429,"$10,403"],
+  ["Surrati Perfumes","surrati.sa","Perfumes & Fragrances","Saudi Arabia",3505,"$46,654"],
+  ["Emaan International","emaan.com.sa","Retail","Saudi Arabia",137,"$5,335"],
+  ["tassne alladaen company","tacogroup.net","HVAC / Home Improvement","Saudi Arabia",16,"$640"],
+  ["Covi.Est","covi.sa","Security / Camera","Saudi Arabia",27,"$1,067"],
+  ["Scientific Gate","sg966.com","Electronics","Saudi Arabia",10,"$500"],
+  ["Al-Wabel Trading","al-wabel.com","Retail","Saudi Arabia",16,"$640"],
+  ["RePall","repall.com.sa","Packaging","Saudi Arabia",27,"$1,067"],
+  ["Gold's Gym Jeddah","www.ggjeddah.com","Fitness","Saudi Arabia",688,"$16,671"],
+  ["Proscape LLC","waterinmotiondxb.com","Landscaping","Saudi Arabia",16,"$640"],
+  ["Surrati Perfumes","surrati.sa","Perfumes & Fragrances","Saudi Arabia",3505,"$46,654"],
+  ["FAST FIT EMS","www.fastfit-ems.com","Fitness","Saudi Arabia",11277,"$95,510"],
+  ["Al-Muhaidib Marjan Group","store.marjangroup.com","Plumbing","Saudi Arabia",457,"$11,070"],
+  ["ENAYA COMPANY","shop.enaya.com.sa","Retail","Saudi Arabia",27,"$1,067"],
+  ["Shicurly","sa.shicurly.com","Hair Care","Saudi Arabia",27,"$1,067"],
+  ["AlphaGraphics Saudi Arabia","cs.alphagraphics.com.sa","Retail","Saudi Arabia",5,"$500"],
+  ["Food Source | مصدر","foodsource.sa","Food & Drink","Saudi Arabia",21,"$853"],
+  ["FILTER - Car Services","filter.com.sa","Auto Services","Saudi Arabia",21,"$853"],
+  ["Feel Saudi Arabia","feel.sa","Apparel","Saudi Arabia",16,"$640"],
+  ["Pure Saudi Arabia","pureco.sa","Retail","Saudi Arabia",16,"$640"],
+  ["طيبات العلا","taibatalolla.com.sa","Retail","Saudi Arabia",21,"$853"],
+  ["LACALI","www.lacali.sa","Apparel","Saudi Arabia",null,"$50"],
+  ["Forever Souq","forever-souq.com","Retail","Saudi Arabia",null,"$500"],
+  ["REBOUND HOLDINGS","rebound.net","Apparel","Saudi Arabia",null,"$500"],
+  ["Salla","salla.com","Retail","Saudi Arabia",null,"$500"],
+  ["NOB","nob.sa","Business Services","Saudi Arabia",null,"$500"],
+];
+
+// Deduplicate by domain
+const seen = new Set();
+const deduped = data.filter(r => { if(seen.has(r[1])) return false; seen.add(r[1]); return true; });
+deduped.sort((a,b) => (b[4]||0) - (a[4]||0));
+
+let filtered = [...deduped];
+let currentPage = 1;
+const perPage = 20;
+let regionFilter = 'all';
+let searchTerm = '';
+
+function fmt(n) {
+  if (n == null) return '—';
+  return n.toLocaleString();
+}
+
+function renderTable() {
+  const start = (currentPage-1)*perPage;
+  const page = filtered.slice(start, start+perPage);
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = page.map(r => `
+    <tr>
+      <td>
+        <div class="td-name">${r[0]}</div>
+        <div class="td-domain">${r[1]}</div>
+      </td>
+      <td class="td-cat">${r[2]}</td>
+      <td><span class="region-pill">${r[3]}</span></td>
+      <td class="td-num">${fmt(r[4])}</td>
+      <td class="td-sales">${r[5]}</td>
+    </tr>
+  `).join('');
+  const total = filtered.length;
+  const totalPages = Math.ceil(total/perPage)||1;
+  document.getElementById('pageInfo').textContent = `${start+1}–${Math.min(start+perPage, total)} of ${total} companies`;
+  document.getElementById('prevBtn').disabled = currentPage===1;
+  document.getElementById('nextBtn').disabled = currentPage===totalPages || total===0;
+}
+
+function filterTable() {
+  searchTerm = document.getElementById('searchBox').value.toLowerCase();
+  filtered = deduped.filter(r => {
+    const mr = regionFilter==='all' ||
+      (regionFilter==='UAE' && r[3]==='UAE') ||
+      (regionFilter==='Saudi Arabia' && r[3]==='Saudi Arabia') ||
+      (regionFilter==='Other' && r[3]!=='UAE' && r[3]!=='Saudi Arabia');
+    const ms = !searchTerm || r[0].toLowerCase().includes(searchTerm) || r[1].toLowerCase().includes(searchTerm);
+    return mr && ms;
+  });
+  currentPage = 1;
+  renderTable();
+}
+
+function setRegion(region, btn) {
+  regionFilter = region;
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTable();
+}
+
+function changePage(dir) {
+  const total = Math.ceil(filtered.length/perPage)||1;
+  currentPage = Math.max(1, Math.min(currentPage+dir, total));
+  renderTable();
+}
+
+// Nav active state
+const sections = document.querySelectorAll('section[id]');
+const navItems = document.querySelectorAll('.nav-item');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if(window.scrollY >= s.offsetTop - 120) current = s.id; });
+  navItems.forEach(n => { n.classList.toggle('active', n.getAttribute('href')==='#'+current); });
+});
+
+// Dates
+const now = new Date();
+const dateStr = now.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+document.getElementById('report-date').textContent = dateStr;
+document.getElementById('footer-date').textContent = dateStr;
+
+renderTable();
+</script>
+</body>
+</html>
